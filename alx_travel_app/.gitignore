@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+.py[cod]
+.sqlite3
+.log
+.env
+db.sqlite3
+
+# macOS / Linux / Windows
+.DS_Store
+Thumbs.db
+
+# Virtual Environments
+venv/
+env/
+alx_venv/
+.egg-info/
+
+# VSCode / PyCharm
+.vscode/
+../.idea/
+
+# Django migrations
+/migrations/*.py
+/migrations/*.pyc
+!*/migrations/__init__.py
+
+# Static and media files
+staticfiles/
+media/
+alx_travel_app/db.sqlite3
