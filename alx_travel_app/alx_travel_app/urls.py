@@ -32,6 +32,8 @@ urlpatterns = [
     # --- drf-spectacular schema and documentation URLs ---
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path("api/swagger/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-alt"),
+    path("docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-root"),
     path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]
 
