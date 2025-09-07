@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 from datetime import timedelta
 from pathlib import Path
 from decouple import config
+import dj_database_url
 
 load_dotenv()
 
@@ -30,9 +31,9 @@ CHAPA_SECRET_KEY = config("CHAPA_SECRET_KEY")
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true' # Default to False if not set
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['.onrender.com', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -83,11 +84,11 @@ WSGI_APPLICATION = 'alx_travel_app.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# Database Configuration (PostgreSQL)
+# Use dj_database_url to parse the DATABASE_URL environment variable
+DATABASE_URL = os.getenv("DATABASE_URL")
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)
 }
 
 
@@ -125,8 +126,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles' # Where static files will be collected
+# STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage' # If you want advanced Whitenoise
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -199,27 +202,41 @@ SIMPLE_JWT = {
     'JTI_CLAIM': 'jti',
 }
 
-# Celery Configuration (UPDATED for RabbitMQ)
-# Ensure 'pika' is installed: pip install pika
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'amqp://guest:guest@localhost:5672//') # RabbitMQ default
-# Using 'rpc://' for result backend is fine for simple use, or 'db+postgresql://' for persistence
-CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'rpc://')
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC'
-CELERY_TASK_TRACK_STARTED = True
-CELERY_TASK_TIME_LIMIT = 300 # seconds
+# Celery Configuration (Updated for production RabbitMQ URL)
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'amqp://guest:guest@localhost:5672//') # Use env var
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'rpc://') # Can also use Redis or a persistent DB
 
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
-# For production: configure with your SMTP server details (e.g., SendGrid, Mailgun, Gmail)
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.example.com')
-# EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
-# EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
-# EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-# EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+# Django Email Backend Configuration (For production SMTP service)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@alxtravelapp.com')
-SERVER_EMAIL = os.getenv('SERVER_EMAIL', 'admin@alxtravelapp.com') # For error reports etc.
+SERVER_EMAIL = os.getenv('SERVER_EMAIL', 'admin@alxtravelapp.com')
+
+# Redis Cache Configuration (If caching is integrated)
+# Make sure REDIS_URL is set as an environment variable in Render
+if os.getenv('REDIS_URL'):
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": os.getenv('REDIS_URL'), # Render provides REDIS_URL
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "IGNORE_EXCEPTIONS": True,
+                "PICKLE_VERSION": -1,
+            },
+            "KEY_PREFIX": "alxcaching"
+        }
+    }
+else:
+    # Fallback to a simpler cache or do not use cache if Redis not available
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "unique-snowflake",
+        }
+    }

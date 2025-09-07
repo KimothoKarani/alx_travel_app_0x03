@@ -60,3 +60,7 @@ urllib3==2.5.0
 vine==5.1.0
 wcwidth==0.2.13
 yarl==1.20.1
+gunicorn>=21.2
+whitenoise>=6.6
+dj-database-url>=2.1 # Already there if you followed caching milestone
+django-redis>=5.2 # If you integrated caching
